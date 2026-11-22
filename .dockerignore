@@ -1,0 +1,9 @@
+.git
+tests
+coordination
+check
+arena
+protocol.md
+README.md
+**/__pycache__
+**/*.pyc
