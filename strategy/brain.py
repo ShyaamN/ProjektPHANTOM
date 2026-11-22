@@ -11,7 +11,8 @@ from typing import List, Optional, Sequence, Tuple
 
 import mechfight as mf
 
-from combat.aim import norm, projectile_dodge, wrap_angle, yaw_pitch
+from combat.aim import angle_error, norm, projectile_dodge, wrap_angle, yaw_pitch
+from combat.weapons import aim_gate
 from combat.weapons import decide as decide_weapons
 from navigation.grid import NavGrid, build_grid
 from navigation.map import Solids
@@ -347,18 +348,32 @@ class Brain:
             weapons.append(None)
         target = mechs[0][1] if mechs else None
         nearest = features["nearest"]
-        wants = wants_for(state, nearest if target else 1e9, features["isolated"], features["hp_frac"])
+        stats = me.get("stats") or {}
+        muzzle_h = float(stats.get("muzzle_height") or (self.cfg.get("mech") or {}).get("muzzle_height") or 7.0)
+        height = float(stats.get("height") or (self.cfg.get("mech") or {}).get("height") or 9.0)
+        muzzle = (x, y, z + muzzle_h)
+        los = features["los"] if target is not None and mechs and target is mechs[0][1] else False
+        com = (target.get("pos") or [x, y, z])[2] + (1.6 if target and target.get("kind") == "npc" else 4.5) if target else z
+        aim_aligned = False
+        if target is not None and nearest < 1e8:
+            apos = target.get("pos") or (x, y, z)
+            desired = yaw_pitch(muzzle, (float(apos[0]), float(apos[1]), float(com)))
+            aim_aligned = angle_error(me.get("aim") or [0.0, 0.0], desired) <= aim_gate(nearest)
+        wants = wants_for(
+            state,
+            nearest if target else 1e9,
+            features["isolated"],
+            features["hp_frac"],
+            gun_range=_gun_range(weapons, self.cfg),
+            aim_aligned=aim_aligned,
+            los=bool(los),
+        )
         if target is None and npcs and features["npc_close"] < 22.0 and nearest > 60.0:
             target = npcs[0][1]
             nearest = features["npc_close"]
             wants = {"gun": True, "laser": False, "mortar": False, "lightning": features["npc_close"] < 16.0}
         look_yaw = self._look_yaw(state, features, mechs, move, x, y, me)
-        stats = me.get("stats") or {}
-        muzzle_h = float(stats.get("muzzle_height") or (self.cfg.get("mech") or {}).get("muzzle_height") or 7.0)
-        height = float(stats.get("height") or (self.cfg.get("mech") or {}).get("height") or 9.0)
-        muzzle = (x, y, z + muzzle_h)
         tube = (x, y, z + height + 0.5)
-        los = features["los"] if target is not None and mechs and target is mechs[0][1] else False
         if target is not None and not mechs:
             if self.solids is not None:
                 los = not self.solids.blocks_segment(muzzle, _body(target), 6.0)
@@ -417,6 +432,23 @@ class Brain:
     @staticmethod
     def _finite(v: float) -> bool:
         return v == v and abs(v) < 1e7
+
+
+def _gun_range(weapons, cfg) -> float:
+    for weapon in weapons or []:
+        if not weapon or weapon.get("kind") != "gun":
+            continue
+        stats = weapon.get("stats") or {}
+        if stats.get("range") is None:
+            break
+        try:
+            return float(stats["range"])
+        except (TypeError, ValueError):
+            break
+    try:
+        return float(((cfg.get("weapons") or {}).get("gun") or {}).get("range") or 230.0)
+    except (TypeError, ValueError):
+        return 230.0
 
 
 def _zone_ready(zone: dict) -> bool:

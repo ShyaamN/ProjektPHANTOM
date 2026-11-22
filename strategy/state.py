@@ -32,24 +32,61 @@ def decide_state(f: dict) -> str:
     return SURVIVE
 
 
-def wants_for(state: str, nearest: float, isolated: bool, hp_frac: float) -> dict:
+# Below this fraction, keep running. At or above it, an isolated attacker in gun range gets a reply.
+RETURN_FIRE_HP = 0.35
+
+
+def allow_return_fire(
+    nearest: float,
+    isolated: bool,
+    hp_frac: float,
+    gun_range: float,
+    aim_aligned: bool,
+    los: bool,
+) -> bool:
+    """Gun only. Does not start a laser, a mortar, or a chase.
+
+    The shot still has to pass the weapon gate (ammo, cooldown, aim error). This
+    only decides that a hurt bot is allowed to answer an isolated attacker.
+    """
+    if not isolated or not aim_aligned or not los or gun_range <= 0.0:
+        return False
+    if hp_frac < RETURN_FIRE_HP:
+        return False
+    return 0.0 <= nearest < gun_range
+
+
+def wants_for(
+    state: str,
+    nearest: float,
+    isolated: bool,
+    hp_frac: float,
+    gun_range: float = 0.0,
+    aim_aligned: bool = False,
+    los: bool = False,
+) -> dict:
     """Which weapons are allowed to fire. Silence is the default: shots reset regen and travel far."""
     none = {"gun": False, "laser": False, "mortar": False, "lightning": False}
     if state == RECOVER:
-        return none
-    if state == ENGAGE:
-        return {"gun": True, "laser": True, "mortar": True, "lightning": True}
-    if state == ENDGAME:
+        wants = dict(none)
+    elif state == ENGAGE:
+        wants = {"gun": True, "laser": True, "mortar": True, "lightning": True}
+    elif state == ENDGAME:
         if isolated and nearest < 110.0:
-            return {"gun": True, "laser": True, "mortar": True, "lightning": True}
-        return {"gun": nearest < 36.0, "laser": False, "mortar": False, "lightning": nearest < 24.0}
-    if state == ESCAPE:
-        return {"gun": nearest < 26.0, "laser": False, "mortar": False, "lightning": nearest < 18.0}
-    if state == REPOSITION:
-        return {
+            wants = {"gun": True, "laser": True, "mortar": True, "lightning": True}
+        else:
+            wants = {"gun": nearest < 36.0, "laser": False, "mortar": False, "lightning": nearest < 24.0}
+    elif state == ESCAPE:
+        wants = {"gun": nearest < 26.0, "laser": False, "mortar": False, "lightning": nearest < 18.0}
+    elif state == REPOSITION:
+        wants = {
             "gun": isolated and nearest < 42.0 and hp_frac > 0.48,
             "laser": False,
             "mortar": False,
             "lightning": nearest < 22.0,
         }
-    return {"gun": nearest < 20.0, "laser": False, "mortar": False, "lightning": nearest < 16.0}
+    else:
+        wants = {"gun": nearest < 20.0, "laser": False, "mortar": False, "lightning": nearest < 16.0}
+    if allow_return_fire(nearest, isolated, hp_frac, gun_range, aim_aligned, los):
+        wants["gun"] = True
+    return wants

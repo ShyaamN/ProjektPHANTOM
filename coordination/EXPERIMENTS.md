@@ -34,6 +34,12 @@ Result, same 300 observations:
 
 Kept. This is a decision trace on a dead replay. It is not a practice score.
 
+## E3 — return fire while hurt
+
+Hypothesis: an isolated attacker inside gun range, with the torso already aligned and line of sight, should get the gun even in RECOVER, down to HP 0.35. Below that, keep running. Laser, mortar, and lightning stay off. This must still pass `check.py` and the unit tests. It is not a placement change, because nothing here plays a match.
+
+Result: kept. 24 tests OK. The new test stays in RECOVER and fires slot 0 at HP 0.36 against one mech at 100 m. It does not fire at HP 0.34, with the aim reversed, at 250 m (gun range 230), or with a second mech nearby. `check.py` PASS: ready 55 ms, 300/300 in time, p50 0.3 ms, p90 0.7 ms, p99 2.6 ms, max 2.8 ms, 0 bad lines. Suite latency p50 0.06 ms, p99 2.23 ms, max 2.23 ms. On the recorded stream, 42 of 300 decisions set a trigger. That count is not a match score.
+
 ## Not scored yet
 
 These need a hosted match. The levers are in the code.

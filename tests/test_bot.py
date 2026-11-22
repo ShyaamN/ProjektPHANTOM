@@ -25,7 +25,19 @@ from navigation.grid import NavGrid  # noqa: E402
 from navigation.path import Pilot  # noqa: E402
 from strategy.brain import Brain  # noqa: E402
 from strategy.loot import choose_take, pick_upgrade  # noqa: E402
-from strategy.state import ENDGAME, ENGAGE, ESCAPE, LOOT, RECOVER, REPOSITION, ROTATE, SURVIVE, decide_state  # noqa: E402
+from strategy.state import (  # noqa: E402
+    ENDGAME,
+    ENGAGE,
+    ESCAPE,
+    LOOT,
+    RECOVER,
+    REPOSITION,
+    ROTATE,
+    SURVIVE,
+    allow_return_fire,
+    decide_state,
+    wants_for,
+)
 from strategy.zone import clamp_inside, inside_circle, must_rotate, zone_margin  # noqa: E402
 
 
@@ -193,6 +205,42 @@ class TacticsTest(unittest.TestCase):
         move = grid.slide(4.0, 4.0, 10.0, 0.0)
         self.assertGreater(move[1], 0.3)
 
+    def test_return_fire_policy(self):
+        self.assertTrue(allow_return_fire(100.0, True, 0.35, 230.0, True, True))
+        self.assertTrue(allow_return_fire(100.0, True, 0.36, 230.0, True, True))
+        self.assertFalse(allow_return_fire(100.0, True, 0.34, 230.0, True, True))
+        self.assertFalse(allow_return_fire(100.0, False, 0.8, 230.0, True, True))
+        self.assertFalse(allow_return_fire(100.0, True, 0.8, 230.0, False, True))
+        self.assertFalse(allow_return_fire(100.0, True, 0.8, 230.0, True, False))
+        self.assertFalse(allow_return_fire(230.0, True, 0.8, 230.0, True, True))
+        self.assertTrue(allow_return_fire(229.0, True, 0.8, 230.0, True, True))
+        quiet = wants_for(RECOVER, 100.0, True, 0.36)
+        self.assertFalse(quiet["gun"])
+        answered = wants_for(RECOVER, 100.0, True, 0.36, gun_range=230.0, aim_aligned=True, los=True)
+        self.assertTrue(answered["gun"])
+        self.assertFalse(answered["laser"])
+        self.assertFalse(answered["mortar"])
+        self.assertFalse(answered["lightning"])
+
+    def test_return_fire_while_hurt(self):
+        """An isolated mech inside gun range is answered at HP 0.36, and not at 0.34.
+
+        The state stays RECOVER. This is not a chase and not a match.
+        """
+        fired, label = _hurt_reply(0.36, (100.0, 0.0, 0.0), aim_on=True)
+        self.assertTrue(label.startswith("RECOVER"), label)
+        self.assertTrue(fired[0])
+        self.assertFalse(fired[1])
+        quiet, low_label = _hurt_reply(0.34, (100.0, 0.0, 0.0), aim_on=True)
+        self.assertTrue(low_label.startswith("RECOVER"), low_label)
+        self.assertFalse(quiet[0])
+        off_aim, _label = _hurt_reply(0.36, (100.0, 0.0, 0.0), aim_on=False)
+        self.assertFalse(off_aim[0])
+        too_far, _label = _hurt_reply(0.50, (250.0, 0.0, 0.0), aim_on=True)
+        self.assertFalse(too_far[0])
+        crowded, _label = _hurt_reply(0.50, (100.0, 0.0, 0.0), aim_on=True, extra=(120.0, 25.0, 0.0))
+        self.assertFalse(crowded[0])
+
     def test_isolated_mech_in_range_is_a_fight(self):
         """A healthy bot inside the next circle takes an isolated fight. It does not need the squad to ignore each other."""
         msgs = _stream()
@@ -324,6 +372,63 @@ class ProtocolTest(unittest.TestCase):
         self.assertEqual(ready.get("name"), "phantom")
         self.assertEqual(action.get("tick"), obs["tick"])
         self.assertNotIn("\n", json.dumps(ready))
+
+
+class _OpenSight:
+    def blocks_segment(self, *_args, **_kwargs):
+        return False
+
+
+def _hurt_reply(hp_frac: float, enemy_xy, aim_on: bool, extra=None):
+    """One decision against a stationary mech. Sight is forced clear so the map cannot hide them."""
+    import mechfight as mf
+    from combat.aim import yaw_pitch
+
+    msgs = _stream()
+    hello = msgs[0]
+    hello["map"]["dir"] = os.path.join(ROOT, "arena")
+    brain = Brain(hello)
+    brain.grid = None
+    brain.solids = _OpenSight()
+    obs = copy.deepcopy(next(m for m in msgs if m.get("type") == "obs"))
+    obs["t"] = 1.0
+    me = obs["self"]
+    me["pos"] = [0.0, 0.0, 0.0]
+    me["vel"] = [0.0, 0.0, 0.0]
+    me["max_hp"] = 1400.0
+    me["hp"] = 1400.0 * hp_frac
+    me["energy"] = 80.0
+    me["in_zone"] = True
+    me["stats"] = {"muzzle_height": 7.0, "height": 9.0, "turn_rate": 4.0, "min_pitch": -0.7, "max_pitch": 1.3}
+    me["weapons"] = [{
+        "kind": "gun",
+        "cooldown": 0.0,
+        "ammo": 12,
+        "reload": 0.0,
+        "stats": {"damage": 45, "cooldown": 0.24, "speed": 252, "range": 230, "mag": 12, "reload": 2.4},
+    }, None]
+    aimed = yaw_pitch((0.0, 0.0, 7.0), (enemy_xy[0], enemy_xy[1], 4.5))
+    me["aim"] = list(aimed) if aim_on else [math.pi, 0.0]
+    obs["mechs"] = [{
+        "id": 4, "kind": "mech", "pos": [enemy_xy[0], enemy_xy[1], 0.0], "vel": [0.0, 0.0, 0.0],
+        "aim": [math.pi, 0.0], "hp": 1400, "max_hp": 1400, "weapons": ["gun"], "charging": False,
+    }]
+    if extra is not None:
+        obs["mechs"].append({
+            "id": 5, "kind": "mech", "pos": [extra[0], extra[1], extra[2]], "vel": [0.0, 0.0, 0.0],
+            "aim": [0.0, 0.0], "hp": 1400, "max_hp": 1400, "weapons": ["gun"], "charging": False,
+        })
+    for key in ("projectiles", "sounds", "events", "beams", "pickups", "cubes", "crates", "drops"):
+        obs[key] = []
+    obs["offer"] = None
+    obs["alive"] = 16
+    obs["zone"] = {
+        "center": [0.0, 0.0], "radius": 500.0, "next_center": [0.0, 0.0], "next_radius": 400.0,
+        "shrink_start": 200.0, "shrink_end": 250.0, "dps": 20.0,
+    }
+    mf.draw.clear()
+    action = brain.act(obs)
+    return action["fire"], mf.draw._d.get("label", "")
 
 
 def _exchange(proc: subprocess.Popen, msg: dict, timeout: float) -> dict:

@@ -16,11 +16,15 @@ from combat.aim import (
 )
 
 
+def aim_gate(dist: float) -> float:
+    """How far the torso can be from the shot and still be on a mech-sized target."""
+    return max(0.04, math.atan2(2.8, max(dist, 1.0)) + 0.025)
+
+
 def gun_should_fire(ammo: float, reloading: bool, dist: float, gun_range: float, aim_err: float, los: bool, want: bool) -> bool:
     if not want or not los or reloading or ammo <= 0.0 or dist > gun_range - 1.0:
         return False
-    gate = math.atan2(2.8, max(dist, 1.0)) + 0.025
-    return aim_err <= max(0.04, gate)
+    return aim_err <= aim_gate(dist)
 
 
 def should_reload(ammo: float, mag: float, reloading: bool, want_gun: bool) -> bool:
