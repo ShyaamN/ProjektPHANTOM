@@ -67,4 +67,6 @@ All of those are wall times on this machine. They are not match scores.
 
 ## Git commit SHA
 
-Return fire: recorded in the commit that adds it. Tip of `cursor/phantom-survival-bot-bc75` is the commit to push. Nothing on the branch has a hosted score. Nothing has been submitted. GitHub auth is still blocked, so there is no remote.
+Return fire: `2f6ed83e8c058128d3eaa9acc09335bd7da2038d` on `cursor/phantom-survival-bot-bc75`.
+
+Push the tip of that branch. Nothing on it has a hosted score. Nothing has been submitted. GitHub auth is still blocked, so there is no remote.
