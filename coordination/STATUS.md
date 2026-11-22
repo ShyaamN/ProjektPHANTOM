@@ -61,7 +61,7 @@ All of those are wall times on this machine. They are not match scores.
 
 ## Next three priorities
 
-1. Push once `gh` has a token (`gh auth login` or `GH_TOKEN`). The Cursor GitHub account ShyaamN is visible to read-only tools, but the CLI push is still unauthenticated. Do not invent a repo URL. Then submit that URL on the Mech Royale track.
+1. Push `cursor/phantom-survival-bot-bc75` to `main` on https://github.com/ShyaamN/ProjektPHANTOM once `git` or `gh` can authenticate. The remote is empty. Do not force-push if someone else has added commits. Then submit that URL on the Mech Royale track.
 2. Read the hosted practice replay and tune the engage/heal thresholds from real deaths. Do not tune only against the house squad.
 3. Add roof routing where a prism top is a walkable surface and the jet can reach it. Late circles reward height.
 
@@ -69,11 +69,27 @@ All of those are wall times on this machine. They are not match scores.
 
 Return fire: `2f6ed83e8c058128d3eaa9acc09335bd7da2038d` on `cursor/phantom-survival-bot-bc75`.
 
-Push attempt after GitHub was reported connected, 2026-11-22: one `gh repo create projektphantom-mech --public --source=. --remote=origin --push`. Exit 4. Exact error:
+Remote https://github.com/ShyaamN/ProjektPHANTOM is public, default branch `main`, and has no commits (size 0). Push was not forced.
+
+2026-11-22 push of local tip onto `main` failed. No SHA is on `main`. The track page was not submitted.
+
+`git push -u origin HEAD:main` (origin `https://github.com/ShyaamN/ProjektPHANTOM.git`), exit 128:
+
+```
+fatal: could not read Username for 'https://github.com': terminal prompts disabled
+```
+
+`gh auth status`, exit 1:
+
+```
+You are not logged into any GitHub hosts. To log in, run: gh auth login
+```
+
+`gh repo sync ShyaamN/ProjektPHANTOM --force`, exit 4:
 
 ```
 To get started with GitHub CLI, please run:  gh auth login
 Alternatively, populate the GH_TOKEN environment variable with a GitHub API authentication token.
 ```
 
-`gh` on this machine has no hosts and no `GH_TOKEN`. No remote was added. No repository URL exists. The track page was not submitted. Nothing on the branch has a hosted score.
+Did not run `gh auth login` again. Nothing on the branch has a hosted score.
