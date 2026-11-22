@@ -61,7 +61,7 @@ All of those are wall times on this machine. They are not match scores.
 
 ## Next three priorities
 
-1. Push the public GitHub repo and submit it on the Mech Royale track. This environment has no `gh` auth and no Docker.
+1. Push once `gh` has a token (`gh auth login` or `GH_TOKEN`). The Cursor GitHub account ShyaamN is visible to read-only tools, but the CLI push is still unauthenticated. Do not invent a repo URL. Then submit that URL on the Mech Royale track.
 2. Read the hosted practice replay and tune the engage/heal thresholds from real deaths. Do not tune only against the house squad.
 3. Add roof routing where a prism top is a walkable surface and the jet can reach it. Late circles reward height.
 
@@ -69,4 +69,11 @@ All of those are wall times on this machine. They are not match scores.
 
 Return fire: `2f6ed83e8c058128d3eaa9acc09335bd7da2038d` on `cursor/phantom-survival-bot-bc75`.
 
-Push the tip of that branch. Nothing on it has a hosted score. Nothing has been submitted. GitHub auth is still blocked, so there is no remote.
+Push attempt after GitHub was reported connected, 2026-11-22: one `gh repo create projektphantom-mech --public --source=. --remote=origin --push`. Exit 4. Exact error:
+
+```
+To get started with GitHub CLI, please run:  gh auth login
+Alternatively, populate the GH_TOKEN environment variable with a GitHub API authentication token.
+```
+
+`gh` on this machine has no hosts and no `GH_TOKEN`. No remote was added. No repository URL exists. The track page was not submitted. Nothing on the branch has a hosted score.
