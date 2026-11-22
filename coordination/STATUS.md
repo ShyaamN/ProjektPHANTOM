@@ -66,4 +66,6 @@ All of those are wall times on this machine. They are not match scores.
 
 ## Git commit SHA
 
-Filled in after the commit that contains this tree. See the latest commit on `cursor/phantom-survival-bot-bc75`.
+`6582f7dafd8a5fb075e4abee81941c10d139ab32` on `cursor/phantom-survival-bot-bc75`.
+
+That commit is the bot, the tests, and these notes except this SHA line. The follow-up commit only records the hash. No later commit has been scored. Nothing has been submitted.
