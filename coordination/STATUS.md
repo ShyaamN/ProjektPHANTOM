@@ -45,7 +45,7 @@ answers to older queued observations (dropped): 0  wrong tick: 0  bad lines: 0  
 PASS
 ```
 
-`python3 -m unittest discover -s tests`: 21 tests, OK.
+`python3 -m unittest discover -s tests`: 22 tests, OK. One of them locks the free-for-all case: a healthy bot inside the next circle, facing one mech at 30 m, enters ENGAGE.
 
 Decision latency inside the suite (60 observations, caches warm): p50 0.07 ms, p99 2.18 ms, max 2.18 ms.
 
@@ -66,6 +66,6 @@ All of those are wall times on this machine. They are not match scores.
 
 ## Git commit SHA
 
-`6582f7dafd8a5fb075e4abee81941c10d139ab32` on `cursor/phantom-survival-bot-bc75`.
+Bot behavior: `6582f7dafd8a5fb075e4abee81941c10d139ab32`.
 
-That commit is the bot, the tests, and these notes except this SHA line. The follow-up commit only records the hash. No later commit has been scored. Nothing has been submitted.
+Push the tip of `cursor/phantom-survival-bot-bc75`. Later commits on that branch only record this hash and add tests. Nothing on the branch has a hosted score. Nothing has been submitted.

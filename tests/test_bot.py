@@ -193,6 +193,41 @@ class TacticsTest(unittest.TestCase):
         move = grid.slide(4.0, 4.0, 10.0, 0.0)
         self.assertGreater(move[1], 0.3)
 
+    def test_isolated_mech_in_range_is_a_fight(self):
+        """A healthy bot inside the next circle takes an isolated fight. It does not need the squad to ignore each other."""
+        msgs = _stream()
+        hello = msgs[0]
+        hello["map"]["dir"] = os.path.join(ROOT, "arena")
+        brain = Brain(hello)
+        brain.solids = None
+        brain.grid = None
+        obs = copy.deepcopy(next(m for m in msgs if m.get("type") == "obs"))
+        obs["t"] = 0.0
+        me = obs["self"]
+        me["pos"] = [0.0, 0.0, 0.0]
+        me["vel"] = [0.0, 0.0, 0.0]
+        me["hp"] = me["max_hp"] = 1400
+        me["energy"] = 100
+        me["in_zone"] = True
+        me["aim"] = [0.0, 0.0]
+        obs["mechs"] = [{
+            "id": 4, "kind": "mech", "pos": [30.0, 0.0, 0.0], "vel": [0.0, 0.0, 0.0],
+            "aim": [math.pi, 0.0], "hp": 1400, "max_hp": 1400, "weapons": ["gun"], "charging": False,
+        }]
+        for key in ("projectiles", "sounds", "events", "beams", "pickups", "cubes", "crates", "drops"):
+            obs[key] = []
+        obs["offer"] = None
+        obs["zone"] = {
+            "center": [0.0, 0.0], "radius": 500.0, "next_center": [0.0, 0.0], "next_radius": 400.0,
+            "shrink_start": 200.0, "shrink_end": 250.0, "dps": 20.0,
+        }
+        import mechfight as mf
+        mf.draw.clear()
+        action = brain.act(obs)
+        self.assertTrue(mf.draw._d.get("label", "").startswith("ENGAGE"), mf.draw._d.get("label"))
+        self.assertAlmostEqual(action["aim"][0], 0.0, places=2)
+        self.assertLessEqual(math.hypot(*action["move"]), 1.0)
+
     def test_stuck_recovery_triggers_jump_and_replan(self):
         pilot = Pilot()
         pilot.note_motion(0.0, 0.0, 0.0, True)

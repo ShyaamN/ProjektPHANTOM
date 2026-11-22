@@ -38,7 +38,7 @@ Kept. This is a decision trace on a dead replay. It is not a practice score.
 
 These need a hosted match. The levers are in the code.
 
-- A. Survival-first versus aggressive: `wants_for` and `can_engage`. Default is silence unless the fight is isolated or point-blank.
+- A. Survival-first versus aggressive: `wants_for` and `can_engage`. Default is silence unless the fight is isolated or point-blank. Locked by `test_isolated_mech_in_range_is_a_fight`: full HP, one mech at 30 m, inside the next circle, state ENGAGE. Not a match score.
 - B. Cover versus straight movement: `_cover` plus the walk grid. E2 is the only measured step.
 - C. Predictive aim. Synthetic crossing target, muzzle at origin, target (80, 0, 0) moving (0, 20, 0), bullet speed 252. Lead miss 0.000 m. Direct aim miss 6.349 m. Lead is what the bot uses.
 - D. Energy reserve. Boost is for leaving the zone, escaping, a long rotate above 44 energy, or a very long walk above 78. Lightning keeps 25 energy.
