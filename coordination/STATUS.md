@@ -76,7 +76,9 @@ Docker is not installed in this environment, so the read-only 1-CPU container re
 
 ## SHA
 
-pending
+3f57ae8cd6dd5446d61a277b64424855716604ad
+
+That commit adds the bot. The tip of `main` is one commit later and only records this file. Submit the tip: it contains the bot and this status.
 
 ## Push
 
